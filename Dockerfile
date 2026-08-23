@@ -38,6 +38,9 @@ RUN pip install \
 # Копируем код проекта
 COPY . .
 
+# СОЗДАЁМ ДИРЕКТОРИИ ДЛЯ БАЗЫ ДАННЫХ И МЕДИА-ФАЙЛОВ (исправляет ошибку с SQLite)
+RUN mkdir -p /app/data /app/media && chmod -R 755 /app/data /app/media
+
 # Модели Whisper храним в /app/models (это том — не скачиваются повторно)
 ENV HF_HOME=/app/models
 ENV PYTHONUNBUFFERED=1
