@@ -1,77 +1,69 @@
-"""Распознавание речи через faster-whisper."""
 import asyncio
 import logging
 import os
+import tempfile
+from typing import Optional
+
+from faster_whisper import WhisperModel
 
 from app import config
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-_model = None
-_model_lock = asyncio.Lock()
+# Глобальный объект модели (загружается один раз)
+_model: Optional[WhisperModel] = None
 
 
-def _load_model():
+def _load_model() -> WhisperModel:
+    """
+    Загружает модель Whisper с использованием параметров из config.
+    """
     global _model
     if _model is not None:
         return _model
-    log.info("📥 Загружаю модель Whisper '%s'...", config.WHISPER_MODEL)
-    from faster_whisper import WhisperModel
+
+    logger.info(f"📥 Загружаю модель Whisper '{config.WHISPER_MODEL}'...")
     _model = WhisperModel(
-        config.WHISPER_MODEL,
+        model_size_or_path=config.WHISPER_MODEL,
         device=config.WHISPER_DEVICE,
-        compute_type="int8",
+        compute_type="int8",          # оптимально для CPU
+        cpu_threads=4,                # можно изменить под ваш сервер
+        num_workers=1,
     )
-    log.info("✅ Модель загружена")
+    logger.info("✅ Модель загружена")
     return _model
 
 
-def _do_transcribe(model, audio_path: str, use_vad: bool):
-    """Синхронная функция распознавания."""
-    language = config.WHISPER_LANGUAGE
-    if language == "auto":
-        language = None
+async def transcribe(audio_path: str) -> str:
+    """
+    Асинхронно транскрибирует аудиофайл и возвращает текст.
+    """
+    loop = asyncio.get_event_loop()
+    model = await loop.run_in_executor(None, _load_model)
 
-    segments_iter, info = model.transcribe(
-        audio_path,
-        language=language,
-        beam_size=5,
-        vad_filter=use_vad,
-        vad_parameters=dict(
-            min_silence_duration_ms=500,
-            speech_pad_ms=300,
-        ) if use_vad else None,
+    # Параметры транскрипции из конфига
+    language = config.WHISPER_LANGUAGE if config.WHISPER_LANGUAGE != "auto" else None
+    vad_filter = config.WHISPER_VAD_FILTER
+
+    # Запускаем транскрипцию в потоке
+    segments, info = await loop.run_in_executor(
+        None,
+        lambda: model.transcribe(
+            audio_path,
+            language=language,
+            vad_filter=vad_filter,
+            beam_size=5,
+            best_of=5,
+            temperature=0.0,
+        ),
     )
-    segments = []
-    text_parts = []
-    for seg in segments_iter:
-        segments.append({
-            "start": seg.start,
-            "end": seg.end,
-            "text": seg.text.strip(),
-        })
-        text_parts.append(seg.text.strip())
-    return " ".join(text_parts), segments, info
 
+    # Собираем текст из всех сегментов
+    result_text = " ".join(segment.text for segment in segments)
 
-async def transcribe(audio_path: str) -> dict:
-    """Распознаёт речь. Умный fallback: если VAD удалил всё — пробуем без VAD."""
-    if not os.path.exists(audio_path):
-        raise FileNotFoundError(f"Файл не найден: {audio_path}")
+    if not result_text.strip():
+        logger.warning("⚠️ Транскрипция вернула пустой результат")
+        return ""
 
-    async with _model_lock:
-        model = await asyncio.to_thread(_load_model)
-
-    # 1. Первая попытка: с VAD (если включён в конфиге)
-    use_vad = config.WHISPER_VAD_FILTER
-    text, segments, info = await asyncio.to_thread(_do_transcribe, model, audio_path, use_vad)
-
-    # 2. Умный fallback: если VAD был включён, но текст пустой — пробуем без VAD
-    if use_vad and not text.strip():
-        log.info("⚠️ VAD удалил всё аудио, пробую без VAD...")
-        text, segments, info = await asyncio.to_thread(_do_transcribe, model, audio_path, False)
-
-    if not text.strip():
-        return {"text": "[Речь не обнаружена]", "segments": []}
-
-    return {"text": text, "segments": segments}
+    logger.info(f"✅ Транскрипция завершена. Длина текста: {len(result_text)} символов")
+    return result_text.strip()
