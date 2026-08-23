@@ -1,0 +1,11 @@
+.env
+.git
+.gitignore
+data/
+media/
+models/
+__pycache__/
+*.pyc
+.venv/
+README.md
+setup_project.sh

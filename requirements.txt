@@ -1,0 +1,24 @@
+# Каркас бота для Telegram
+aiogram>=3.7.0
+
+# Распознавание речи (быстрый Whisper)
+faster-whisper>=1.0.0
+
+# Скачивание видео/аудио по ссылкам (YouTube, Reels и т.д.)
+yt-dlp>=2024.1.1
+
+# Асинхронный SQLite (база: лимиты, PRO, кэш)
+aiosqlite>=0.19.0
+
+# Чтение .env
+python-dotenv>=1.0.0
+
+# OpenAI-совместимый клиент для ИИ-кнопок (OpenAI/Groq/Gemini)
+openai>=1.30.0
+
+# Прокси для обхода блокировок Telegram
+aiohttp-socks>=0.8.0
+
+edge-tts>=6.1.0
+
+socksio>=1.0.0

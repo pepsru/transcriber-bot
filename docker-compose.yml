@@ -1,0 +1,11 @@
+services:
+  bot:
+    build: .
+    container_name: transcriber_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data      # база SQLite
+      - ./media:/app/media    # временные аудио-файлы
+      - ./models:/app/models  # модели Whisper
