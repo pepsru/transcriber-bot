@@ -1,20 +1,20 @@
 """Конфигурация проекта."""
 import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
 
 def _env(key: str, default: str = "") -> str:
     return os.getenv(key, default).strip()
-
 
 def _env_int(key: str, default: int) -> int:
     try:
         return int(_env(key, str(default)))
     except ValueError:
         return default
-
 
 def _env_bool(key: str, default: bool) -> bool:
     val = _env(key, str(default)).lower()
@@ -28,7 +28,8 @@ ADMIN_SECRET: str = _env("ADMIN_SECRET")
 
 PROXY_URL: str = _env("PROXY_URL")
 
-WHISPER_MODEL: str = _env("WHISPER_MODEL", "small")
+# Жёстко задаём модель, чтобы исключить влияние переменной окружения
+WHISPER_MODEL: str = "small"
 WHISPER_DEVICE: str = _env("WHISPER_DEVICE", "cpu")
 WHISPER_LANGUAGE: str = _env("WHISPER_LANGUAGE", "auto")
 WHISPER_VAD_FILTER: bool = _env_bool("WHISPER_VAD_FILTER", True)
@@ -48,3 +49,6 @@ DB_PATH: str = os.path.join(DATA_DIR, "bot.sqlite")
 
 if not BOT_TOKEN:
     raise RuntimeError("❌ В .env не заполнен BOT_TOKEN.")
+
+# Выводим в лог значение модели (для отладки)
+logger.info(f"🔧 WHISPER_MODEL = {WHISPER_MODEL}")
