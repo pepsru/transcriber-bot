@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import List
 
 from aiogram import types
-from aiogram.dispatcher import FSMContext
+from aiogram.fsm.context import FSMContext  # ✅ правильный импорт
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.exceptions import MessageNotModified
 
@@ -37,7 +37,7 @@ async def _recognize_and_reply(
             await message.answer(texts.RECOGNITION_EMPTY)
             return
 
-        # ✅ ИСПРАВЛЕНО: result — это строка, а не словарь
+        # result — это строка
         transcription = result
 
         # Проверяем лимиты
