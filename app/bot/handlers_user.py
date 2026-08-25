@@ -7,9 +7,8 @@ from datetime import datetime, timedelta
 from typing import List
 
 from aiogram import types
-from aiogram.fsm.context import FSMContext  # ✅ правильный импорт
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-from aiogram.utils.exceptions import MessageNotModified
 
 from app import config, texts
 from app.bot import keyboards
