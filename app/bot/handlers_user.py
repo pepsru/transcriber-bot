@@ -10,7 +10,7 @@ from aiogram import types
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from app import config, texts
+from app.bot import texts
 from app.bot import keyboards
 from app.core import audio, downloader, stt, summarizer, tts
 from app.db import database
